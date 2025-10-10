@@ -43,10 +43,27 @@ if (($_GET['action'] ?? '') === 'edit') {
   if ($id > 0) $edit = get_one("SELECT * FROM units WHERE id=$id");
 }
 
-$units = get_all('SELECT * FROM units ORDER BY id DESC');
+// Search
+$search = esc($_GET['search'] ?? '');
+$where = $search ? "WHERE name LIKE '%$search%'" : '';
+$units = get_all("SELECT * FROM units $where ORDER BY id DESC");
 ?>
+
 <h2>Units</h2>
 
+<!-- Search Bar -->
+<form method="get" class="card" style="margin-bottom: 15px;">
+  <input type="hidden" name="page" value="units">
+  <label>Search by Name:
+    <input type="text" name="search" value="<?= htmlspecialchars($search) ?>" placeholder="Enter unit name...">
+  </label>
+  <button type="submit">Search</button>
+  <?php if ($search): ?>
+    <a href="index.php?page=units" style="margin-left:8px;">Clear</a>
+  <?php endif; ?>
+</form>
+
+<!-- Add / Edit Form -->
 <form method="post" class="card">
   <input type="hidden" name="id" value="<?= $edit['id'] ?? 0 ?>">
   <label>Name <input name="name" value="<?= htmlspecialchars($edit['name'] ?? '') ?>" required></label>
@@ -57,17 +74,22 @@ $units = get_all('SELECT * FROM units ORDER BY id DESC');
   <?php endif; ?>
 </form>
 
+<!-- Units Table -->
 <table class="table">
   <tr><th>ID</th><th>Name</th><th>Symbol</th><th>Actions</th></tr>
-  <?php foreach($units as $u): ?>
-    <tr>
-      <td><?= $u['id'] ?></td>
-      <td><?= htmlspecialchars($u['name']) ?></td>
-      <td><?= htmlspecialchars($u['symbol']) ?></td>
-      <td>
-        <a href="index.php?page=units&action=edit&id=<?= $u['id'] ?>">Edit</a> |
-        <a href="index.php?page=units&action=delete&id=<?= $u['id'] ?>" onclick="return confirm('Delete this unit?')">Delete</a>
-      </td>
-    </tr>
-  <?php endforeach; ?>
+  <?php if (count($units) > 0): ?>
+    <?php foreach($units as $u): ?>
+      <tr>
+        <td><?= $u['id'] ?></td>
+        <td><?= htmlspecialchars($u['name']) ?></td>
+        <td><?= htmlspecialchars($u['symbol']) ?></td>
+        <td>
+          <a href="index.php?page=units&action=edit&id=<?= $u['id'] ?>">Edit</a> |
+          <a href="index.php?page=units&action=delete&id=<?= $u['id'] ?>" onclick="return confirm('Delete this unit?')">Delete</a>
+        </td>
+      </tr>
+    <?php endforeach; ?>
+  <?php else: ?>
+    <tr><td colspan="4" style="text-align:center;">No units found.</td></tr>
+  <?php endif; ?>
 </table>

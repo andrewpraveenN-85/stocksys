@@ -1,8 +1,8 @@
 <?php
 // config.php
 $DB_HOST = 'localhost';
-$DB_USER = 'root';
-$DB_PASS = '';
+$DB_USER = 'root';  // Change this to your MySQL username
+$DB_PASS = '';      // Change this to your MySQL password
 $DB_NAME = 'restaurant_stock';
 
 
@@ -39,4 +39,7 @@ return (float)$v;
 }
 
 
-session_start();
+// Start session only if not already started
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}

@@ -1,5 +1,13 @@
 <?php
 // pages/products.php
+require_once __DIR__ . '/../auth.php';
+
+// Check permissions
+if (!canEdit()) {
+    flash('err', 'Access denied. Only administrators can manage products.');
+    header('Location: index.php');
+    exit;
+}
 
 // ===== Create/Update =====
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {

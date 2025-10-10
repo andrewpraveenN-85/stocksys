@@ -52,13 +52,134 @@ $default_start = date('Y-m-d', strtotime('-7 days'));
 
 $start = isset($_GET['start']) && $_GET['start'] !== '' ? dtrim($_GET['start']) : $default_start;
 $end   = isset($_GET['end'])   && $_GET['end']   !== '' ? dtrim($_GET['end'])   : $today;
+$hide_null = isset($_GET['hide_null']) && $_GET['hide_null'] === '1';
 
 // Simple guard: if start > end, swap
 if (strtotime($start) > strtotime($end)) {
   $tmp = $start; $start = $end; $end = $tmp;
 }
 
-// CSV export?
+// Excel export for Raw Materials
+if (isset($_GET['export']) && $_GET['export'] === 'excel_raw') {
+  header('Content-Type: application/vnd.ms-excel');
+  header('Content-Disposition: attachment; filename="raw_materials_report_'.$start.'_to_'.$end.'.xls"');
+  
+  echo '<html xmlns:x="urn:schemas-microsoft-com:office:excel">';
+  echo '<head><meta charset="utf-8"><style>table {border-collapse: collapse;} th, td {border: 1px solid black; padding: 8px;} th {background-color: #4CAF50; color: white;}</style></head>';
+  echo '<body>';
+  echo '<h2>Raw Materials Stock Report</h2>';
+  echo '<p>Period: '.$start.' to '.$end.'</p>';
+  echo '<table>';
+  echo '<tr><th>#</th><th>Raw Material</th><th>Unit</th><th>Opening</th><th>In</th><th>Out</th><th>Closing</th></tr>';
+
+  $raws = get_all("SELECT r.id, r.name, u.symbol
+                   FROM raw_materials r
+                   JOIN units u ON u.id=r.unit_id
+                   ORDER BY r.name");
+  
+  $totals = ['opening'=>0,'in'=>0,'out'=>0,'closing'=>0];
+  $i = 0;
+  
+  foreach ($raws as $r) {
+    $op = opening_balance('raw', $r['id'], $start);
+    $sum = range_sums('raw', $r['id'], $start, $end);
+    $cl = $op + $sum['in'] - $sum['out'];
+    
+    // Skip if hide_null is enabled and all values are zero
+    if ($hide_null && $op == 0 && $sum['in'] == 0 && $sum['out'] == 0 && $cl == 0) {
+      continue;
+    }
+    
+    $i++;
+    echo '<tr>';
+    echo '<td>'.$i.'</td>';
+    echo '<td>'.htmlspecialchars($r['name']).'</td>';
+    echo '<td>'.htmlspecialchars($r['symbol']).'</td>';
+    echo '<td>'.number_format($op, 3).'</td>';
+    echo '<td>'.number_format($sum['in'], 3).'</td>';
+    echo '<td>'.number_format($sum['out'], 3).'</td>';
+    echo '<td>'.number_format($cl, 3).'</td>';
+    echo '</tr>';
+    
+    $totals['opening'] += $op;
+    $totals['in'] += $sum['in'];
+    $totals['out'] += $sum['out'];
+    $totals['closing'] += $cl;
+  }
+  
+  echo '<tr style="font-weight:bold; background-color:#f0f0f0;">';
+  echo '<td colspan="3">TOTAL</td>';
+  echo '<td>'.number_format($totals['opening'], 3).'</td>';
+  echo '<td>'.number_format($totals['in'], 3).'</td>';
+  echo '<td>'.number_format($totals['out'], 3).'</td>';
+  echo '<td>'.number_format($totals['closing'], 3).'</td>';
+  echo '</tr>';
+  echo '</table>';
+  echo '</body></html>';
+  exit;
+}
+
+// Excel export for Products
+if (isset($_GET['export']) && $_GET['export'] === 'excel_product') {
+  header('Content-Type: application/vnd.ms-excel');
+  header('Content-Disposition: attachment; filename="products_report_'.$start.'_to_'.$end.'.xls"');
+  
+  echo '<html xmlns:x="urn:schemas-microsoft-com:office:excel">';
+  echo '<head><meta charset="utf-8"><style>table {border-collapse: collapse;} th, td {border: 1px solid black; padding: 8px;} th {background-color: #2196F3; color: white;}</style></head>';
+  echo '<body>';
+  echo '<h2>Products Stock Report</h2>';
+  echo '<p>Period: '.$start.' to '.$end.'</p>';
+  echo '<table>';
+  echo '<tr><th>#</th><th>Product</th><th>Unit</th><th>Opening</th><th>In</th><th>Out</th><th>Closing</th></tr>';
+
+  $prods = get_all("SELECT p.id, p.name, u.symbol
+                    FROM products p
+                    JOIN units u ON u.id=p.unit_id
+                    ORDER BY p.name");
+  
+  $totals = ['opening'=>0,'in'=>0,'out'=>0,'closing'=>0];
+  $i = 0;
+  
+  foreach ($prods as $p) {
+    $op = opening_balance('product', $p['id'], $start);
+    $sum = range_sums('product', $p['id'], $start, $end);
+    $cl = $op + $sum['in'] - $sum['out'];
+    
+    // Skip if hide_null is enabled and all values are zero
+    if ($hide_null && $op == 0 && $sum['in'] == 0 && $sum['out'] == 0 && $cl == 0) {
+      continue;
+    }
+    
+    $i++;
+    echo '<tr>';
+    echo '<td>'.$i.'</td>';
+    echo '<td>'.htmlspecialchars($p['name']).'</td>';
+    echo '<td>'.htmlspecialchars($p['symbol']).'</td>';
+    echo '<td>'.number_format($op, 3).'</td>';
+    echo '<td>'.number_format($sum['in'], 3).'</td>';
+    echo '<td>'.number_format($sum['out'], 3).'</td>';
+    echo '<td>'.number_format($cl, 3).'</td>';
+    echo '</tr>';
+    
+    $totals['opening'] += $op;
+    $totals['in'] += $sum['in'];
+    $totals['out'] += $sum['out'];
+    $totals['closing'] += $cl;
+  }
+  
+  echo '<tr style="font-weight:bold; background-color:#f0f0f0;">';
+  echo '<td colspan="3">TOTAL</td>';
+  echo '<td>'.number_format($totals['opening'], 3).'</td>';
+  echo '<td>'.number_format($totals['in'], 3).'</td>';
+  echo '<td>'.number_format($totals['out'], 3).'</td>';
+  echo '<td>'.number_format($totals['closing'], 3).'</td>';
+  echo '</tr>';
+  echo '</table>';
+  echo '</body></html>';
+  exit;
+}
+
+// CSV export (original - kept for backward compatibility)
 if (isset($_GET['export']) && $_GET['export'] === 'csv') {
   header('Content-Type: text/csv');
   header('Content-Disposition: attachment; filename="stock_report_'.$start.'_to_'.$end.'.csv"');
@@ -75,6 +196,11 @@ if (isset($_GET['export']) && $_GET['export'] === 'csv') {
     $op = opening_balance('raw', $r['id'], $start);
     $sum = range_sums('raw', $r['id'], $start, $end);
     $cl = $op + $sum['in'] - $sum['out'];
+    
+    if ($hide_null && $op == 0 && $sum['in'] == 0 && $sum['out'] == 0 && $cl == 0) {
+      continue;
+    }
+    
     fputcsv($out, ['raw', $r['name'], $r['symbol'], $op, $sum['in'], $sum['out'], $cl]);
   }
 
@@ -87,6 +213,11 @@ if (isset($_GET['export']) && $_GET['export'] === 'csv') {
     $op = opening_balance('product', $p['id'], $start);
     $sum = range_sums('product', $p['id'], $start, $end);
     $cl = $op + $sum['in'] - $sum['out'];
+    
+    if ($hide_null && $op == 0 && $sum['in'] == 0 && $sum['out'] == 0 && $cl == 0) {
+      continue;
+    }
+    
     fputcsv($out, ['product', $p['name'], $p['symbol'], $op, $sum['in'], $sum['out'], $cl]);
   }
   fclose($out);
@@ -113,6 +244,11 @@ foreach ($raws as $r) {
   $sum = range_sums('raw', $r['id'], $start, $end);
   $cl = $op + $sum['in'] - $sum['out'];
 
+  // Skip if hide_null is enabled and all values are zero
+  if ($hide_null && $op == 0 && $sum['in'] == 0 && $sum['out'] == 0 && $cl == 0) {
+    continue;
+  }
+
   $raw_rows[] = [
     'id'   => (int)$r['id'],
     'name' => $r['name'],
@@ -135,6 +271,11 @@ foreach ($prods as $p) {
   $op = opening_balance('product', $p['id'], $start);
   $sum = range_sums('product', $p['id'], $start, $end);
   $cl = $op + $sum['in'] - $sum['out'];
+
+  // Skip if hide_null is enabled and all values are zero
+  if ($hide_null && $op == 0 && $sum['in'] == 0 && $sum['out'] == 0 && $cl == 0) {
+    continue;
+  }
 
   $prod_rows[] = [
     'id'   => (int)$p['id'],
@@ -170,13 +311,36 @@ $ledger = get_all("
   <label>To
     <input type="date" name="end" value="<?= htmlspecialchars($end) ?>">
   </label>
+  <label style="display:flex; align-items:center; gap:6px;">
+    <input type="checkbox" name="hide_null" value="1" <?= $hide_null ? 'checked' : '' ?>>
+    Hide Null Items
+  </label>
   <button>Apply</button>
-  <a href="index.php?page=stock_report&start=<?= urlencode($start) ?>&end=<?= urlencode($end) ?>&export=csv"
-     class="button"
-     style="text-decoration:none;padding:8px;border:1px solid #334155;border-radius:8px;background:#0b1220;color:#e2e8f0;">
-    Export CSV
-  </a>
+  
+  <div style="display:flex; gap:8px;">
+    <a href="index.php?page=stock_report&start=<?= urlencode($start) ?>&end=<?= urlencode($end) ?>&hide_null=<?= $hide_null ? '1' : '0' ?>&export=excel_raw"
+       class="button"
+       style="text-decoration:none;padding:8px;border:1px solid #4CAF50;border-radius:8px;background:#0b1220;color:#4CAF50;">
+      📊 Export Raw Materials (Excel)
+    </a>
+    <a href="index.php?page=stock_report&start=<?= urlencode($start) ?>&end=<?= urlencode($end) ?>&hide_null=<?= $hide_null ? '1' : '0' ?>&export=excel_product"
+       class="button"
+       style="text-decoration:none;padding:8px;border:1px solid #2196F3;border-radius:8px;background:#0b1220;color:#2196F3;">
+      📊 Export Products (Excel)
+    </a>
+    <a href="index.php?page=stock_report&start=<?= urlencode($start) ?>&end=<?= urlencode($end) ?>&hide_null=<?= $hide_null ? '1' : '0' ?>&export=csv"
+       class="button"
+       style="text-decoration:none;padding:8px;border:1px solid #334155;border-radius:8px;background:#0b1220;color:#e2e8f0;">
+      📄 Export CSV
+    </a>
+  </div>
 </form>
+
+<?php if ($hide_null): ?>
+<div class="card" style="background:#fef3c7; color:#92400e; padding:10px; margin-bottom:12px;">
+  ℹ️ Showing only items with activity (hiding zero/null items)
+</div>
+<?php endif; ?>
 
 <div class="grid-2">
   <div class="card">
