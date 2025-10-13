@@ -40,10 +40,27 @@ if (($_GET['action'] ?? '') === 'edit') {
   if ($id > 0) $edit = get_one("SELECT * FROM suppliers WHERE id=$id");
 }
 
-$suppliers = get_all('SELECT * FROM suppliers ORDER BY id DESC');
+// Search
+$search = esc($_GET['search'] ?? '');
+$where = $search ? "WHERE name LIKE '%$search%'" : '';
+$suppliers = get_all("SELECT * FROM suppliers $where ORDER BY id DESC");
 ?>
+
 <h2>Suppliers</h2>
 
+<!-- Search Bar -->
+<form method="get" class="card" style="margin-bottom: 15px;">
+  <input type="hidden" name="page" value="suppliers">
+  <label>Search by Name:
+    <input type="text" name="search" value="<?= htmlspecialchars($search) ?>" placeholder="Enter supplier name...">
+  </label>
+  <button type="submit">Search</button>
+  <?php if ($search): ?>
+    <a href="index.php?page=suppliers" style="margin-left:8px;">Clear</a>
+  <?php endif; ?>
+</form>
+
+<!-- Add / Edit Form -->
 <form method="post" class="card">
   <input type="hidden" name="id" value="<?= $edit['id'] ?? 0 ?>">
   <label>Name <input name="name" value="<?= htmlspecialchars($edit['name'] ?? '') ?>" required></label>
@@ -53,18 +70,23 @@ $suppliers = get_all('SELECT * FROM suppliers ORDER BY id DESC');
   <?php if ($edit): ?><a href="index.php?page=suppliers" style="margin-left:8px">Cancel</a><?php endif; ?>
 </form>
 
+<!-- Suppliers Table -->
 <table class="table">
   <tr><th>ID</th><th>Name</th><th>Phone</th><th>Address</th><th>Actions</th></tr>
-  <?php foreach($suppliers as $s): ?>
-    <tr>
-      <td><?= $s['id'] ?></td>
-      <td><?= htmlspecialchars($s['name']) ?></td>
-      <td><?= htmlspecialchars($s['phone']) ?></td>
-      <td><?= htmlspecialchars($s['address']) ?></td>
-      <td>
-        <a href="index.php?page=suppliers&action=edit&id=<?= $s['id'] ?>">Edit</a> |
-        <a href="index.php?page=suppliers&action=delete&id=<?= $s['id'] ?>" onclick="return confirm('Delete this supplier?')">Delete</a>
-      </td>
-    </tr>
-  <?php endforeach; ?>
+  <?php if (count($suppliers) > 0): ?>
+    <?php foreach($suppliers as $s): ?>
+      <tr>
+        <td><?= $s['id'] ?></td>
+        <td><?= htmlspecialchars($s['name']) ?></td>
+        <td><?= htmlspecialchars($s['phone']) ?></td>
+        <td><?= htmlspecialchars($s['address']) ?></td>
+        <td>
+          <a href="index.php?page=suppliers&action=edit&id=<?= $s['id'] ?>">Edit</a> |
+          <a href="index.php?page=suppliers&action=delete&id=<?= $s['id'] ?>" onclick="return confirm('Delete this supplier?')">Delete</a>
+        </td>
+      </tr>
+    <?php endforeach; ?>
+  <?php else: ?>
+    <tr><td colspan="5" style="text-align:center;">No suppliers found.</td></tr>
+  <?php endif; ?>
 </table>
