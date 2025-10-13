@@ -1,9 +1,9 @@
 <?php
 // config.php
 $DB_HOST = 'localhost';
-$DB_USER = 'root';  // Change this to your MySQL username
-$DB_PASS = '';      // Change this to your MySQL password
-$DB_NAME = 'restaurant_stock';
+$DB_USER = 'dbuser';  // Change this to your MySQL username
+$DB_PASS = 'L{582Phb1Lh5';      // Change this to your MySQL password
+$DB_NAME = 'stocksys';
 
 
 $conn = mysqli_connect($DB_HOST, $DB_USER, $DB_PASS);
