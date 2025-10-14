@@ -9,61 +9,61 @@ if (!canEdit()) {
     exit;
 }
 
-// ===== Create/Update =====
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-  $id      = (int)($_POST['id'] ?? 0);
-  $name    = esc($_POST['name'] ?? '');
-  $unit_id = (int)($_POST['unit_id'] ?? 0);
-  $opening = num($_POST['opening_qty'] ?? 0);
-  $price   = num($_POST['selling_price'] ?? 0);
+// // ===== Create/Update =====
+// if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+//   $id      = (int)($_POST['id'] ?? 0);
+//   $name    = esc($_POST['name'] ?? '');
+//   $unit_id = (int)($_POST['unit_id'] ?? 0);
+//   $opening = num($_POST['opening_qty'] ?? 0);
+//   $price   = num($_POST['selling_price'] ?? 0);
 
-  if (!$name || !$unit_id) {
-    flash('err','Name and Unit required'); header('Location: index.php?page=products'); exit;
-  }
+//   if (!$name || !$unit_id) {
+//     flash('err','Name and Unit required'); header('Location: index.php?page=products'); exit;
+//   }
 
-  if ($id > 0) {
-    q("UPDATE products SET name='$name', unit_id=$unit_id, selling_price=$price WHERE id=$id");
-    flash('ok','Product updated');
-  } else {
-    q("INSERT INTO products (name, unit_id, opening_qty, current_qty, selling_price)
-       VALUES ('$name', $unit_id, $opening, $opening, $price)");
-    $pid = mysqli_insert_id($conn);
-    if ($opening > 0) {
-      q("INSERT INTO stock_ledger
-         (item_type,item_id,ref_type,ref_id,entry_date,qty_in,qty_out,balance_after,note)
-         VALUES ('product',$pid,'OPENING',NULL,'".now()."',$opening,0,$opening,'Opening balance')");
-    }
-    flash('ok','Product added');
-  }
-  header('Location: index.php?page=products'); exit;
-}
+//   if ($id > 0) {
+//     q("UPDATE products SET name='$name', unit_id=$unit_id, selling_price=$price WHERE id=$id");
+//     flash('ok','Product updated');
+//   } else {
+//     q("INSERT INTO products (name, unit_id, opening_qty, current_qty, selling_price)
+//        VALUES ('$name', $unit_id, $opening, $opening, $price)");
+//     $pid = mysqli_insert_id($conn);
+//     if ($opening > 0) {
+//       q("INSERT INTO stock_ledger
+//          (item_type,item_id,ref_type,ref_id,entry_date,qty_in,qty_out,balance_after,note)
+//          VALUES ('product',$pid,'OPENING',NULL,'".now()."',$opening,0,$opening,'Opening balance')");
+//     }
+//     flash('ok','Product added');
+//   }
+//   header('Location: index.php?page=products'); exit;
+// }
 
-// ===== Delete =====
-if (($_GET['action'] ?? '') === 'delete') {
-  $id = (int)($_GET['id'] ?? 0);
-  if ($id > 0) {
-    // Block delete if referenced by recipe or production
-    $usedRec = get_one("SELECT COUNT(*) c FROM recipes WHERE product_id=$id")['c'];
-    $usedProd= get_one("SELECT COUNT(*) c
-                        FROM productions pr
-                        JOIN recipes r ON r.id = pr.recipe_id
-                        WHERE r.product_id = $id")['c'];
-    if ($usedRec || $usedProd) {
-      flash('err','Cannot delete: Product has recipes or productions');
-    } else {
-      q("DELETE FROM products WHERE id=$id");
-      flash('ok','Product deleted');
-    }
-  }
-  header('Location: index.php?page=products'); exit;
-}
+// // ===== Delete =====
+// if (($_GET['action'] ?? '') === 'delete') {
+//   $id = (int)($_GET['id'] ?? 0);
+//   if ($id > 0) {
+//     // Block delete if referenced by recipe or production
+//     $usedRec = get_one("SELECT COUNT(*) c FROM recipes WHERE product_id=$id")['c'];
+//     $usedProd= get_one("SELECT COUNT(*) c
+//                         FROM productions pr
+//                         JOIN recipes r ON r.id = pr.recipe_id
+//                         WHERE r.product_id = $id")['c'];
+//     if ($usedRec || $usedProd) {
+//       flash('err','Cannot delete: Product has recipes or productions');
+//     } else {
+//       q("DELETE FROM products WHERE id=$id");
+//       flash('ok','Product deleted');
+//     }
+//   }
+//   header('Location: index.php?page=products'); exit;
+// }
 
-// ===== Edit (prefill) =====
-$edit = null;
-if (($_GET['action'] ?? '') === 'edit') {
-  $id = (int)($_GET['id'] ?? 0);
-  if ($id > 0) $edit = get_one("SELECT * FROM products WHERE id=$id");
-}
+// // ===== Edit (prefill) =====
+// $edit = null;
+// if (($_GET['action'] ?? '') === 'edit') {
+//   $id = (int)($_GET['id'] ?? 0);
+//   if ($id > 0) $edit = get_one("SELECT * FROM products WHERE id=$id");
+// }
 
 // ===== Units =====
 $units = get_all('SELECT * FROM units ORDER BY name');
@@ -143,7 +143,7 @@ $rows = get_all("SELECT p.*, u.symbol
 
 <h2>Products (Final Dishes & Finished Goods)</h2>
 
-<form method="post" class="card">
+<!-- <form method="post" class="card">
   <input type="hidden" name="id" value="<?= $edit['id'] ?? 0 ?>">
   <label>Name
     <input name="name" value="<?= htmlspecialchars($edit['name'] ?? '') ?>" required>
@@ -170,18 +170,18 @@ $rows = get_all("SELECT p.*, u.symbol
 
   <button><?= $edit ? 'Update Product' : 'Add Product' ?></button>
   <?php if ($edit): ?><a href="index.php?page=products" style="margin-left:8px">Cancel</a><?php endif; ?>
-</form>
+</form> -->
 
 <table class="table">
   <tr>
     <th>ID</th>
     <th>Name</th>
-    <th>Unit</th>
+    <!-- <th>Unit</th>
     <th>Current Qty</th>
     <th>Selling Price</th>
     <th>Current Cost (per unit)</th>
-    <th>Margin</th>
-    <th>Actions</th>
+    <th>Margin</th> -->
+    <!-- <th>Actions</th> -->
   </tr>
   <?php foreach ($rows as $r): ?>
     <?php
@@ -195,7 +195,7 @@ $rows = get_all("SELECT p.*, u.symbol
     <tr>
       <td><?= $pid ?></td>
       <td><?= htmlspecialchars($r['name']) ?></td>
-      <td><?= htmlspecialchars($r['symbol']) ?></td>
+      <!-- <td><?= htmlspecialchars($r['symbol']) ?></td>
       <td><?= (float)$r['current_qty'] ?></td>
       <td><?= number_format($sp, 2) ?></td>
       <td><?= $ccost === null ? '—' : number_format($ccost, 2) ?></td>
@@ -206,12 +206,12 @@ $rows = get_all("SELECT p.*, u.symbol
           <?= number_format($marginAbs, 2) ?>
           <?= $marginPct !== null ? ' ('.number_format($marginPct, 1).'%)' : '' ?>
         <?php endif; ?>
-      </td>
-      <td>
+      </td> -->
+      <!-- <td>
         <a href="index.php?page=products&action=edit&id=<?= $pid ?>">Edit</a> |
         <a href="index.php?page=products&action=delete&id=<?= $pid ?>"
            onclick="return confirm('Delete this product?')">Delete</a>
-      </td>
+      </td> -->
     </tr>
   <?php endforeach; ?>
 </table>
