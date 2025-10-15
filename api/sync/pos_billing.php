@@ -62,12 +62,12 @@ if ($method === 'POST') {
             continue;
         }
 
-        $error_flag2;
+        $error_flag2=0;
         $success_flag2;
         //foreach recipe_items
         foreach ($recipe_items as $recipe_item) {
             //per one yeild qty
-            $used_qty = ($$recipe_item['qty'] / $recipe['yield_qty']) * $sales_item['qty'];
+            $used_qty = ($recipe_item['qty'] / $recipe['yield_qty']) * $sales_item['qty'];
             //update raw_materials set current_qty = current_qty - used_qty where equal to raw_material_id
             //check before deduct, ifstock is sufficient mark the error_flag
             // if stock is insufficient, add error to error_flag and skip deduction
@@ -78,7 +78,8 @@ if ($method === 'POST') {
             } else {
                 q("UPDATE raw_materials SET current_qty = current_qty - " . $used_qty . " WHERE id = " . $recipe_item['raw_material_id']);
                 //add to stock_ledger
-                $newBal = get_one("SELECT current_qty FROM raw_materials WHERE id = " . $recipe_item['raw_material_id']);
+                $newBalArray = get_one("SELECT current_qty FROM raw_materials WHERE id = " . $recipe_item['raw_material_id']);
+                $newBal = $newBalArray['current_qty'];
                 $pid = $recipe_item['raw_material_id'];
                 $grn_id = $sales_item['pos_id'];
                 q("INSERT INTO stock_ledger (item_type,item_id,ref_type,ref_id,entry_date,qty_in,qty_out,balance_after,note) VALUES ('product',$pid,'GRN',$grn_id,'" . now() . "',$used_qty,0,$newBal,'POS $grn_id')");
