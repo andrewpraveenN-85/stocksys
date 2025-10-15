@@ -74,9 +74,14 @@ if ($method === 'POST') {
             //else continue to deduct
             $raw_material = get_one("SELECT * FROM raw_materials WHERE id = " . $recipe_item['raw_material_id']);
             if ($raw_material['current_qty'] < $used_qty) {
-                $error_flag2 ++;
+                $error_flag2++;
             } else {
                 q("UPDATE raw_materials SET current_qty = current_qty - " . $used_qty . " WHERE id = " . $recipe_item['raw_material_id']);
+                //add to stock_ledger
+                $newBal = get_one("SELECT current_qty FROM raw_materials WHERE id = " . $recipe_item['raw_material_id']);
+                $pid = $recipe_item['raw_material_id'];
+                $grn_id = $sales_item['pos_id'];
+                q("INSERT INTO stock_ledger (item_type,item_id,ref_type,ref_id,entry_date,qty_in,qty_out,balance_after,note) VALUES ('product',$pid,'GRN',$grn_id,'" . now() . "',$used_qty,0,$newBal,'POS $grn_id')");
             }
         }
 
@@ -84,7 +89,7 @@ if ($method === 'POST') {
         if (count($recipe_items) == $error_flag2) {
             $error_flag[] = [['error' => 'recipe items failed for product: ' . $sales_item['pos_id']], 422];
             continue;
-        }else{
+        } else {
             $success_flag[] = [['ok' => true, 'message' => 'Stock updated for product: ' . $sales_item['pos_id']]];
             continue;
         }
